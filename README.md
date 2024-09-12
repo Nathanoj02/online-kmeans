@@ -3,13 +3,11 @@ Project for Signals, Image &amp; Video, Master's Degree in Artificial Intelligen
 
 ## Setup
 Clone repository
-
-`
+```
 git clone git@github.com:Nathanoj02/signals.git
-`
+```
 
 Update submodule
-
-`
+```
 git submodule update --init --recursive
-`
+```

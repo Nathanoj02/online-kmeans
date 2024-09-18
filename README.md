@@ -11,3 +11,14 @@ Update submodule
 ```
 git submodule update --init --recursive
 ```
+
+Cpp setup
+```
+mkdir build && cd build
+```
+```
+cmake ..
+```
+```
+make -j
+```

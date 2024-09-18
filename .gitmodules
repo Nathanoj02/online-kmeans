@@ -2,6 +2,3 @@
 	path = cpp/python/pybind11
 	url = https://github.com/pybind/pybind11.git
 	branch = stable
-[submodule "cpp/pybind11"]
-	path = cpp/pybind11
-	url = git@github.com:pybind/pybind11.git

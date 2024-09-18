@@ -1,5 +1,6 @@
-#include <iostream>
 #include "core.hpp"
+
+#include <iostream>
 
 namespace signals
 {

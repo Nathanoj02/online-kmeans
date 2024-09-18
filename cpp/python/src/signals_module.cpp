@@ -19,7 +19,7 @@ static void submodules(pybind11::module& m)
     parallel_submodule(par_subm);
 }
 
-PYBIND11_MODULE(signals, m) {
+PYBIND11_MODULE(pysignals, m) {
     m.doc() = "Python signals core module";
     submodules(m);
 }

@@ -2,6 +2,8 @@
 
 #include "core.hpp"
 
+#include <iostream>
+
 namespace signals {
 
 } // namespace signals
@@ -14,7 +16,7 @@ void sequential_submodule(pybind11::module& subm)
 {
     subm.doc() = "Python signals submodule for sequential algorithms";
 
-    // subm.def("foo", )
+    subm.def("foo", &print);
 
     // subm.def(
     //     "census_transform", 

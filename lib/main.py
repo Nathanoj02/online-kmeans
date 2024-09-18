@@ -1,13 +1,12 @@
 import sys
 import os
-import cv2 as cv
+# import cv2 as cv
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "python"))
 
-from build.module_name import *
+import pysignals
 
 if __name__ == '__main__':
-    foo()
-    img = cv.imread('prova.jpg')
+    pysignals.seq.foo()
+    # img = cv.imread('prova.jpg')
     

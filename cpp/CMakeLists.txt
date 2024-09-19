@@ -29,6 +29,20 @@ set(INCLUDES ${INCLUDES} ${CUDA_INCLUDE_DIRS})
 set(DEPENDENCIES ${DEPENDENCIES} ${CUDA_LIBRARIES})
 
 # ------------------------------------------------------------------------------
+# Setup OpenCV.
+find_package(OpenCV REQUIRED)
+set(INCLUDES ${INCLUDES} ${OpenCV_INCLUDE_DIRS})
+set(DEPENDENCIES ${DEPENDENCIES} ${OpenCV_LIBS})
+list(APPEND CUDA_NVCC_FLAGS ${OpenCV_COMPUTE_CAPABILITIES})
+message(STATUS "OpenCV include directories: ${OpenCV_INCLUDE_DIRS}")
+message(STATUS "OpenCV linking library dependecies: ${OpenCV_LIBS}")
+message(STATUS "OpenCV compilation compute capability: ${OpenCV_COMPUTE_CAPABILITIES}")
+message(STATUS "OpenCV compilation with CUDA version: ${OpenCV_CUDA_VERSION}")
+message(STATUS "OpenCV_USE_CUBLAS: ${OpenCV_USE_CUBLAS}")
+message(STATUS "OpenCV_USE_CUFFT: ${OpenCV_USE_CUFFT}")
+message(STATUS "OpenCV_USE_NVCUVID: ${OpenCV_USE_NVCUVID}")
+
+# ------------------------------------------------------------------------------
 # Set the C++ compiler options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3")

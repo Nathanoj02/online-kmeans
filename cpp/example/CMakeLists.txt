@@ -1,5 +1,5 @@
 set(EXAMPLES_CPP
-    
+    opencv_test
 )
 
 foreach(EXAMPLE ${EXAMPLES_CPP})

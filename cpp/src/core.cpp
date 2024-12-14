@@ -1,12 +1,96 @@
 #include "core.hpp"
 
 #include <iostream>
+#include <opencv2/imgcodecs.hpp>
 
 namespace signals
 {
 
 void print () {
     std::cout << "Hello World!" << std::endl;
+}
+
+void k_means (
+    std::uint8_t* dst, std::uint8_t* img,
+    std::size_t img_height, std::size_t img_width,
+    std::uint64_t k, std::float_t stab_error) 
+{
+    srand((unsigned) time(NULL));
+
+    // Create k prototypes with random values
+    std::uint8_t* prototypes = (std::uint8_t*) malloc (sizeof(uint8_t) * k * 3);
+    for (int i = 0; i < k * 3; i++) 
+    {
+        prototypes[i] = rand() % 256;
+    }
+    
+    std::uint8_t* assigned_img = (std::uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));  // Map : pixels -> cluster number
+
+    // Array for calculating means
+    std::uint64_t* sums = (std::uint64_t*) calloc (k * 3, sizeof(uint64_t));
+    std::uint64_t* counts = (std::uint64_t*) calloc (k, sizeof(uint64_t));
+
+    std::uint8_t* old_prototypes = (std::uint8_t*) malloc (sizeof(uint8_t) * k * 3);
+
+    bool bound_reached = false;
+
+    // Loop until prototypes are stable
+    for (int iteration_count = 0; !bound_reached; iteration_count++)
+    {
+        memcpy(old_prototypes, prototypes, k * 3 * sizeof(uint8_t));    // Save old values for calculating differences
+
+        // Associate each pixel to nearest prototype (with Euclidian distance)
+        for (int i = 0; i < img_height; i++)
+        {
+            for (int j = 0; j < img_width; j++)
+            {
+                uint8_t r = img[i * img_width * 3 + j * 3];
+                uint8_t g = img[i * img_width * 3 + j * 3 + 1];
+                uint8_t b = img[i * img_width * 3 + j * 3 + 2];
+
+                int min_distance = INT_MAX;
+                int assigned_prototype_index = -1;
+                for (int p = 0; p < k; p++)
+                {
+                    uint8_t prot_r = prototypes[p * 3];
+                    uint8_t prot_g = prototypes[p * 3 + 1];
+                    uint8_t prot_b = prototypes[p * 3 + 2];
+
+                    int distance = sqrt(pow(r - prot_r, 2) + pow(g - prot_g, 2) + pow(b - prot_b, 2));
+                    if (distance < min_distance) {
+                        min_distance = distance;
+                        assigned_prototype_index = p;
+                    }
+                }
+                assigned_img[i * img_width + j] = assigned_prototype_index;
+
+                sums[assigned_prototype_index * 3] += r;
+                sums[assigned_prototype_index * 3 + 1] += g;
+                sums[assigned_prototype_index * 3 + 2] += b;
+                counts[assigned_prototype_index]++;
+            }
+        }
+
+        // Update values of the prototypes to the means of the associated pixels
+        for (int i = 0; i < k; i++)
+        {
+            if (counts[i] != 0)
+            {
+                prototypes[i * 3] = sums[i * 3] / counts[i];
+                prototypes[i * 3 + 1] = sums[i * 3 + 1] / counts[i];
+                prototypes[i * 3 + 2] = sums[i * 3 + 2] / counts[i];
+            }
+        }
+
+        // TODO Calculate differences and break if every difference if less than stab_error
+        bound_reached = false;
+
+        
+
+    }
+
+    // TODO Substitute each pixel with the corresponding prototype value
+
 }
 
 } // namespace signals

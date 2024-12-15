@@ -11,26 +11,26 @@ void print () {
 }
 
 void k_means (
-    std::uint8_t* dst, std::uint8_t* img,
-    std::size_t img_height, std::size_t img_width,
-    std::uint64_t k, std::float_t stab_error) 
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    uint64_t k, float_t stab_error) 
 {
     srand((unsigned) time(NULL));
 
     // Create k prototypes with random values
-    std::uint8_t* prototypes = (std::uint8_t*) malloc (sizeof(uint8_t) * k * 3);
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * 3);
     for (int i = 0; i < k * 3; i++) 
     {
         prototypes[i] = rand() % 256;
     }
     
-    std::uint8_t* assigned_img = (std::uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));  // Map : pixels -> cluster number
+    uint8_t* assigned_img = (uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));  // Map : pixels -> cluster number
 
     // Array for calculating means
-    std::uint64_t* sums = (std::uint64_t*) calloc (k * 3, sizeof(uint64_t));
-    std::uint64_t* counts = (std::uint64_t*) calloc (k, sizeof(uint64_t));
+    uint64_t* sums = (uint64_t*) calloc (k * 3, sizeof(uint64_t));
+    uint64_t* counts = (uint64_t*) calloc (k, sizeof(uint64_t));
 
-    std::uint8_t* old_prototypes = (std::uint8_t*) malloc (sizeof(uint8_t) * k * 3);
+    uint8_t* old_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * 3);
 
     bool bound_reached = false;
 
@@ -48,7 +48,7 @@ void k_means (
                 uint8_t g = img[i * img_width * 3 + j * 3 + 1];
                 uint8_t b = img[i * img_width * 3 + j * 3 + 2];
 
-                int min_distance = INT_MAX;
+                float min_distance = MAXFLOAT;
                 int assigned_prototype_index = -1;
                 for (int p = 0; p < k; p++)
                 {
@@ -56,7 +56,7 @@ void k_means (
                     uint8_t prot_g = prototypes[p * 3 + 1];
                     uint8_t prot_b = prototypes[p * 3 + 2];
 
-                    int distance = sqrt(pow(r - prot_r, 2) + pow(g - prot_g, 2) + pow(b - prot_b, 2));
+                    float distance = sqrt(pow(r - prot_r, 2) + pow(g - prot_g, 2) + pow(b - prot_b, 2));
                     if (distance < min_distance) {
                         min_distance = distance;
                         assigned_prototype_index = p;
@@ -82,15 +82,39 @@ void k_means (
             }
         }
 
-        // TODO Calculate differences and break if every difference if less than stab_error
-        bound_reached = false;
+        // Calculate differences
+        bound_reached = true;
 
-        
+        for (int i = 0; i < k; i++)
+        {
+            uint8_t prot_r = prototypes[i * 3];
+            uint8_t prot_g = prototypes[i * 3 + 1];
+            uint8_t prot_b = prototypes[i * 3 + 2];
+            uint8_t old_r = old_prototypes[i * 3];
+            uint8_t old_g = old_prototypes[i * 3 + 1];
+            uint8_t old_b = old_prototypes[i * 3 + 2];
 
+            float distance = sqrt(pow(prot_r - old_r, 2) + pow(prot_g - old_g, 2) + pow(prot_b - old_b, 2));
+
+            if (distance > stab_error)
+            {
+                bound_reached = false;
+                break;
+            }
+        }
     }
 
-    // TODO Substitute each pixel with the corresponding prototype value
-
+    // Substitute each pixel with the corresponding prototype value
+    for (int i = 0; i < img_height; i++)
+    {
+        for (int j = 0; j < img_width; j++)
+        {
+            int index = assigned_img[i * img_width + j];
+            dst[i * img_width * 3 + j * 3] = prototypes[index];
+            dst[i * img_width * 3 + j * 3 + 1] = prototypes[index + 1];
+            dst[i * img_width * 3 + j * 3 + 2] = prototypes[index + 2];
+        }
+    }
 }
 
 } // namespace signals

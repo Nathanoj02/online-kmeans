@@ -18,6 +18,8 @@ void sequential_submodule(pybind11::module& subm)
 
     subm.def("foo", &print);
 
+    subm.def("k_means", &k_means);
+
     // subm.def(
     //     "census_transform", 
     //     [](py::array_t<std::uint8_t> img_arr, py::tuple kernel_shape){

@@ -9,7 +9,11 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "p
 import pysignals
 
 if __name__ == '__main__':
-    pysignals.seq.foo()
+
+    img = cv.imread('../data/car.jpg')
+    pysignals.seq.k_means()
+
+    cv.imwrite(f'../data/kmeans_cpp.jpg', img)
 
     # for k in range(1, 11) :
     #     img = cv.imread('../data/car.jpg')

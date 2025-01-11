@@ -110,9 +110,9 @@ void k_means (
         for (int j = 0; j < img_width; j++)
         {
             int index = assigned_img[i * img_width + j];
-            dst[i * img_width * 3 + j * 3] = prototypes[index];
-            dst[i * img_width * 3 + j * 3 + 1] = prototypes[index + 1];
-            dst[i * img_width * 3 + j * 3 + 2] = prototypes[index + 2];
+            dst[i * img_width * 3 + j * 3] = prototypes[index * 3];
+            dst[i * img_width * 3 + j * 3 + 1] = prototypes[index * 3 + 1];
+            dst[i * img_width * 3 + j * 3 + 2] = prototypes[index * 3 + 2];
         }
     }
 }

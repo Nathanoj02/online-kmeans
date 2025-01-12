@@ -68,7 +68,8 @@ set(CXX_SOURCE_FILES
 )
 
 set(CUDA_SOURCE_FILES
-    
+    src/core_par.cu
+    src/error.cu
 )
 
 # ------------------------------------------------------------------------------

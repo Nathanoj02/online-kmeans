@@ -37,6 +37,9 @@ def k_means (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
     while any(differences > stab_error) :
         print(f'Iteration {iteration_count}')
         old_values = prototypes.copy()  # Save old values for calculating differences
+        # Reset sums and counts
+        [arr.fill(0) for arr in sums]
+        counts.fill(0)
 
         # Associate each pixel to nearest prototype (with Euclidian distance)
         for i, pixel in enumerate(img.reshape(-1, 3)) :

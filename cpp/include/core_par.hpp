@@ -1,6 +1,8 @@
 #ifndef SIGNALS_CORE_PAR_HPP
 #define SIGNALS_CORE_PAR_HPP
 
+#include <opencv2/imgcodecs.hpp>
+
 namespace signals {
 
 namespace cuda {
@@ -21,15 +23,11 @@ DeviceInfo& find_best_grid(
 );
 
 
-// void k_means (
-//     uint8_t* dst, uint8_t* img,
-//     size_t img_height, size_t img_width,
-//     uint64_t k, float_t stab_error
-// );
-
-void print();
-
-
+void k_means(
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    uint64_t k, float_t stab_error
+);
 
 
 

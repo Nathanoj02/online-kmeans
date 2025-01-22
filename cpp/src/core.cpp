@@ -1,7 +1,6 @@
 #include "core.hpp"
 
 #include <iostream>
-#include <opencv2/imgcodecs.hpp>
 
 namespace signals
 {
@@ -27,8 +26,8 @@ void k_means (
     uint8_t* assigned_img = (uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));  // Map : pixels -> cluster number
 
     // Array for calculating means
-    uint64_t* sums = (uint64_t*) calloc (k * 3, sizeof(uint64_t));
-    uint64_t* counts = (uint64_t*) calloc (k, sizeof(uint64_t));
+    uint64_t* sums = (uint64_t*) malloc (sizeof(uint64_t) * k * 3);
+    uint64_t* counts = (uint64_t*) malloc (sizeof(uint64_t) * k);
 
     uint8_t* old_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * 3);
 
@@ -38,6 +37,10 @@ void k_means (
     for (int iteration_count = 0; !bound_reached; iteration_count++)
     {
         memcpy(old_prototypes, prototypes, k * 3 * sizeof(uint8_t));    // Save old values for calculating differences
+
+        // Resetting sums and counts
+        for (int i = 0; i < k * 3; i++) sums[i] = 0;
+        for (int i = 0; i < k; i++) counts[i] = 0;
 
         // Associate each pixel to nearest prototype (with Euclidian distance)
         for (int i = 0; i < img_height; i++)

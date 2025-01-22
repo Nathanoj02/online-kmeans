@@ -10,13 +10,14 @@ import pysignals
 
 if __name__ == '__main__':
 
-    # img = cv.imread('../data/car.jpg')
+    img = cv.imread('../data/car.jpg')
 
-    # dst = pysignals.seq.k_means(img, 5, 0.1)
+    dst = pysignals.seq.k_means(img, 5, 0.1)
+    # res = k_means(img, 5, 5)
 
-    # cv.imwrite(f'../data/kmeans_cpp.jpg', dst)
+    cv.imwrite(f'../data/kmeans_cpp.jpg', dst)
 
-    pysignals.par.print()
+    # dst = pysignals.par.k_means(img, 5, 0.1)
 
     # for k in range(1, 11) :
     #     img = cv.imread('../data/car.jpg')

@@ -12,10 +12,10 @@ if __name__ == '__main__':
 
     img = cv.imread('../data/car.jpg')
 
-    dst = pysignals.seq.k_means(img, 5, 0.1)
+    res = pysignals.par.k_means(img, 5, 1)
     # res = k_means(img, 5, 5)
 
-    cv.imwrite(f'../data/kmeans_cpp.jpg', dst)
+    cv.imwrite(f'../data/kmeans_cuda.jpg', res)
 
     # dst = pysignals.par.k_means(img, 5, 0.1)
 

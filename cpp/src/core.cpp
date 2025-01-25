@@ -97,9 +97,9 @@ void k_means (
             uint8_t old_g = old_prototypes[i * 3 + 1];
             uint8_t old_b = old_prototypes[i * 3 + 2];
 
-            float distance = sqrt(pow(prot_r - old_r, 2) + pow(prot_g - old_g, 2) + pow(prot_b - old_b, 2));
+            float distance_squared = pow(prot_r - old_r, 2) + pow(prot_g - old_g, 2) + pow(prot_b - old_b, 2);
 
-            if (distance > stab_error)
+            if (distance_squared > stab_error)
             {
                 bound_reached = false;
                 break;

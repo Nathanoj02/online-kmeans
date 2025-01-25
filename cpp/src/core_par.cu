@@ -90,8 +90,6 @@ void k_means(
     DeviceInfo dev_info;
     find_best_grid(dev_info, img_height, img_width);
 
-    // Square the error to match the distance
-    stab_error = pow(stab_error, 2);
     bool bound_reached = false;
 
     // Loop until prototypes are stable

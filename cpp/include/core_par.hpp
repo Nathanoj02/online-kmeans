@@ -18,6 +18,15 @@ struct DeviceInfo {
     DimInfo grid;
 };
 
+struct KmeansInfo {
+    uint8_t *d_img;
+    uint8_t *d_assigned_img;
+    uint8_t *d_prototypes;
+    uint64_t *d_sums;
+    uint64_t *d_counts; 
+    struct DeviceInfo dim;
+};
+
 /**
  * Find best grid for current GPU
  * 
@@ -29,6 +38,19 @@ struct DeviceInfo {
  */
 DeviceInfo& find_best_grid(
     DeviceInfo& device_info, std::size_t height, std::size_t width
+);
+
+/**
+ * Initialization for k-means algorithm, allocating memory on the GPU
+ * 
+ * @param img_height Source image height
+ * @param img_width Source image width
+ * @param k Number of clusters
+ * 
+ * @return Struct with pointers to GPU memory and block and grid dimensions
+ */
+KmeansInfo init_k_means(
+    size_t img_height, size_t img_width, uint64_t k
 );
 
 /**
@@ -44,7 +66,17 @@ DeviceInfo& find_best_grid(
 void k_means(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
-    uint64_t k, float_t stab_error
+    uint64_t k, float_t stab_error,
+    const KmeansInfo& device_info
+);
+
+/**
+ * De-initialization for k-means algorithm, deallocating memory from the GPU
+ * 
+ * @param device_info Struct with pointers to GPU memory and block and grid dimensions
+ */
+void deinit_k_means(
+    KmeansInfo& device_info
 );
 
 

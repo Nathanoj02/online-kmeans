@@ -50,22 +50,15 @@ void k_means_kernel(
     atomicAdd((unsigned long long int*) &d_counts[assigned_prototype_index], 1);
 }
 
+
 void k_means(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
-    uint64_t k, float_t stab_error)
-{
-    // Alloc space for CUDA arrays
-    uint8_t *d_img, *d_assigned_img, *d_prototypes;
-    uint64_t *d_sums, *d_counts; 
-    SAFE_CALL( cudaMalloc(&d_img, sizeof(uint8_t) * img_height * img_width * 3) );
-    SAFE_CALL( cudaMalloc(&d_assigned_img, sizeof(uint8_t) * img_height * img_width) );
-    SAFE_CALL( cudaMalloc(&d_prototypes, sizeof(uint8_t) * k * 3) );
-    SAFE_CALL( cudaMalloc(&d_sums, sizeof(uint64_t) * k * 3) );
-    SAFE_CALL( cudaMalloc(&d_counts, sizeof(uint64_t) * k) );
-    
+    uint64_t k, float_t stab_error,
+    const KmeansInfo& device_info)
+{   
     // Copy data to CUDA (initial)
-    SAFE_CALL( cudaMemcpy(d_img, img, sizeof(uint8_t) * img_height * img_width * 3, cudaMemcpyHostToDevice));
+    SAFE_CALL( cudaMemcpy(device_info.d_img, img, sizeof(uint8_t) * img_height * img_width * 3, cudaMemcpyHostToDevice));
 
     srand((unsigned) time(NULL));
 
@@ -98,23 +91,24 @@ void k_means(
         memcpy(old_prototypes, prototypes, k * 3 * sizeof(uint8_t));    // Save old values for calculating differences
         
         // Copy to CUDA
-        SAFE_CALL( cudaMemcpy(d_prototypes, old_prototypes, sizeof(uint8_t) * k * 3, cudaMemcpyHostToDevice));
-        SAFE_CALL( cudaMemset(d_sums, 0, sizeof(uint64_t) * k * 3));
-        SAFE_CALL( cudaMemset(d_counts, 0, sizeof(uint64_t) * k));
+        SAFE_CALL( cudaMemcpy(device_info.d_prototypes, old_prototypes, sizeof(uint8_t) * k * 3, cudaMemcpyHostToDevice));
+        SAFE_CALL( cudaMemset(device_info.d_sums, 0, sizeof(uint64_t) * k * 3));
+        SAFE_CALL( cudaMemset(device_info.d_counts, 0, sizeof(uint64_t) * k));
 
         // Kernel call
         dim3 dim_grid = dim3(dev_info.grid.x, dev_info.grid.y, dev_info.grid.z);
         dim3 dim_block = dim3(dev_info.block.x, dev_info.block.y, dev_info.block.z);
         k_means_kernel <<<dim_grid, dim_block>>> (
-            d_img, d_assigned_img, d_prototypes, d_sums, d_counts,
+            device_info.d_img, device_info.d_assigned_img, device_info.d_prototypes, 
+            device_info.d_sums, device_info.d_counts,
             img_height, img_width, k
         );
         CHECK_CUDA_ERROR;
 
         // Copy data back to CPU
-        SAFE_CALL( cudaMemcpy(assigned_img, d_assigned_img, sizeof(uint8_t) * img_height * img_width, cudaMemcpyDeviceToHost ));
-        SAFE_CALL( cudaMemcpy(sums, d_sums, sizeof(uint64_t) * k * 3, cudaMemcpyDeviceToHost ));
-        SAFE_CALL( cudaMemcpy(counts, d_counts, sizeof(uint64_t) * k, cudaMemcpyDeviceToHost ));
+        SAFE_CALL( cudaMemcpy(assigned_img, device_info.d_assigned_img, sizeof(uint8_t) * img_height * img_width, cudaMemcpyDeviceToHost ));
+        SAFE_CALL( cudaMemcpy(sums, device_info.d_sums, sizeof(uint64_t) * k * 3, cudaMemcpyDeviceToHost ));
+        SAFE_CALL( cudaMemcpy(counts, device_info.d_counts, sizeof(uint64_t) * k, cudaMemcpyDeviceToHost ));
 
         // Update values of the prototypes to the means of the associated pixels
         for (int i = 0; i < k; i++)
@@ -162,6 +156,30 @@ void k_means(
     }
 }
 
+
+KmeansInfo init_k_means(size_t img_height, size_t img_width, uint64_t k)
+{
+    KmeansInfo device_info;
+    SAFE_CALL( cudaMalloc(&device_info.d_img, sizeof(uint8_t) * img_height * img_width * 3) );
+    SAFE_CALL( cudaMalloc(&device_info.d_assigned_img, sizeof(uint8_t) * img_height * img_width) );
+    SAFE_CALL( cudaMalloc(&device_info.d_prototypes, sizeof(uint8_t) * k * 3) );
+    SAFE_CALL( cudaMalloc(&device_info.d_sums, sizeof(uint64_t) * k * 3) );
+    SAFE_CALL( cudaMalloc(&device_info.d_counts, sizeof(uint64_t) * k) );
+    find_best_grid(device_info.dim, img_height, img_width);
+    return device_info;
+}
+
+
+void deinit_k_means(KmeansInfo& device_info)
+{
+    SAFE_CALL( cudaFree( device_info.d_img ) );
+    SAFE_CALL( cudaFree( device_info.d_assigned_img ) );
+    SAFE_CALL( cudaFree( device_info.d_prototypes ) );
+    SAFE_CALL( cudaFree( device_info.d_sums ) );
+    SAFE_CALL( cudaFree( device_info.d_counts ) );
+}
+
+
 static cudaDeviceProp find_best_gpu()
 {
     // Save properties of GPUs
@@ -185,6 +203,7 @@ static cudaDeviceProp find_best_gpu()
     }
     return best_device_prop;
 }
+
 
 DeviceInfo& find_best_grid(DeviceInfo& device_info, std::size_t height, std::size_t width)
 {

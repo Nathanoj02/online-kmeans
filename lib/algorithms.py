@@ -117,6 +117,8 @@ def k_means_cuda (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
     Clustered image
     '''
     assert img is not None, 'Image not loaded correctly'
-    
-    res = pysignals.par.k_means(img, k, stab_error)
+
+    dev = pysignals.par.init_k_means(img.shape[0], img.shape[1], k)
+    res = pysignals.par.k_means(img, k, stab_error, dev)
+    pysignals.par.deinit_k_means(dev)
     return res

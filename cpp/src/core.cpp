@@ -5,10 +5,6 @@
 namespace signals
 {
 
-void print () {
-    std::cout << "Hello World!" << std::endl;
-}
-
 void k_means (
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,

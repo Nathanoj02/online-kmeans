@@ -6,8 +6,16 @@
 namespace signals
 {
 
-void print();
-
+/**
+ * K-means clustering algorithm
+ * 
+ * @param dst Destination image
+ * @param img Source image
+ * @param img_height Source image height
+ * @param img_width Source image width
+ * @param k Number of clusters
+ * @param stab_error Error bound to reach to end the algorithm
+ */
 void k_means (
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,

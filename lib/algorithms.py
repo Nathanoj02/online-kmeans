@@ -1,5 +1,11 @@
 import numpy as np
-import cv2 as cv
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "python"))
+
+import pysignals
+
 
 def k_means (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
     '''
@@ -68,4 +74,49 @@ def k_means (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
             img[i, j] = prototypes[assigned_img[i, j]].astype(np.uint8)
     
     return img
+
+
+def k_means_cpp (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
+    '''
+    K-means algorithm executed in C++
+
+    Parameters
+    ----------
+    img : np.ndarray, 2D
+        Image
+    k : int
+        Number of clusters
+    stab_error :
+        Stabilization error 
+
+    Returns
+    -------
+    Clustered image
+    '''
+    assert img is not None, 'Image not loaded correctly'
+
+    res = pysignals.seq.k_means(img, k, stab_error)
+    return res
+
+
+def k_means_cuda (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
+    '''
+    K-means algorithm executed in CUDA C++
+
+    Parameters
+    ----------
+    img : np.ndarray, 2D
+        Image
+    k : int
+        Number of clusters
+    stab_error :
+        Stabilization error 
+
+    Returns
+    -------
+    Clustered image
+    '''
+    assert img is not None, 'Image not loaded correctly'
     
+    res = pysignals.par.k_means(img, k, stab_error)
+    return res

@@ -1,18 +1,12 @@
-import sys
-import os
 import cv2 as cv
 
-from algorithms import k_means
-from stats import elbow_method, silouette_method
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "python"))
-
-import pysignals
+from algorithms import k_means, k_means_cpp, k_means_cuda
+from metrics import elbow_method, silouette_method
 
 if __name__ == '__main__':
 
     # elbow_method('../data/car.jpg', 1, 15)
-    silouette_method('../data/car.jpg', 1, 10)
+    silouette_method('../data/car.jpg', 2, 10)
 
 
     # img = cv.imread('../data/car.jpg')

@@ -1,18 +1,32 @@
 import cv2 as cv
 
 from algorithms import k_means, k_means_cpp, k_means_cuda
-from metrics import elbow_method, silhouette_method
-
-if __name__ == '__main__':
-
-    # elbow_method('../data/car.jpg', 1, 15)
-    # silouette_method('../data/car.jpg', 2, 10)
+from metrics import elbow_method, silhouette_method, metrics, plot_execution_times
 
 
+def test_exec_times () :
     img = cv.imread('../data/car.jpg')
-    res = k_means_cuda(img, 2, 0.5)
+    plot_execution_times(img, 5, 0.5)
+
+
+def test_metrics () :
+    img = cv.imread('../data/car.jpg')
+    metrics(img, 1, 10)
+
+
+def test_algorithms () :
+    img = cv.imread('../data/car.jpg')
+    
+    res = k_means(img, 5, 0.5)
+    cv.imwrite(f'../data/kmeans_python.jpg', res)
+
+    res = k_means_cpp(img, 5, 0.5)
+    cv.imwrite(f'../data/kmeans_cpp.jpg', res)
+
+    res = k_means_cuda(img, 5, 0.5)
     cv.imwrite(f'../data/kmeans_cuda.jpg', res)
 
-    # res = k_means_cpp(img, 2, 0.5)
-    # cv.imwrite(f'../data/kmeans_cpp.jpg', res)
+
+if __name__ == '__main__':
+    test_exec_times()
     

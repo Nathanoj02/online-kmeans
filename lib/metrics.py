@@ -1,11 +1,14 @@
-import cv2 as cv
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import silhouette_score
 import time
 
-from algorithms import k_means_cpp
+from algorithms import k_means, k_means_cpp, k_means_cuda
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "python"))
+
+import pysignals
 
 
 def _elbow_method (img : np.ndarray, clustered_img : np.ndarray, k : int) :
@@ -14,8 +17,7 @@ def _elbow_method (img : np.ndarray, clustered_img : np.ndarray, k : int) :
     return error
 
 
-def elbow_method (img_path : str, start_k : int, end_k : int) :
-    img = cv.imread(img_path)
+def elbow_method (img : np.ndarray, start_k : int, end_k : int) :
     error_arr = np.array([])
 
     for k in range (start_k, end_k + 1) :
@@ -47,8 +49,7 @@ def _silhouette_method (img : np.ndarray, clustered_img : np.ndarray, k : int) :
     return silhouette_avg
 
 
-def silhouette_method (img_path : str, start_k : int, end_k : int) :
-    img = cv.imread(img_path)
+def silhouette_method (img : np.ndarray, start_k : int, end_k : int) :
     sil_arr = []
     
     for k in range (start_k, end_k + 1) :
@@ -67,8 +68,7 @@ def silhouette_method (img_path : str, start_k : int, end_k : int) :
     plt.savefig('../data/stats/silhouette.jpg')
 
 
-def metrics (img_path : str, start_k : int, end_k : int) :
-    img = cv.imread(img_path)
+def metrics (img : np.ndarray, start_k : int, end_k : int) :
     error_arr = []
     sil_arr = []
 
@@ -94,3 +94,67 @@ def metrics (img_path : str, start_k : int, end_k : int) :
     plt.xlabel('Number of clusters k')
     plt.ylabel('Average silouette width')
     plt.savefig('../data/stats/silhouette.jpg')
+
+
+def _execution_time_step (algorithm, img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
+    times = []
+
+    for i in range(tries) :
+        dusk = time.time()
+        algorithm(img, k, stab_error)
+        dawn = time.time()
+        times.append(dawn - dusk)
+    
+    return times
+
+
+def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
+    times = _execution_time_step(k_means, img, k, stab_error, tries)
+    py_time_avg = np.mean(times)
+    py_time_std = np.std(times)
+    
+    times = _execution_time_step(k_means_cpp, img, k, stab_error, tries)
+    cpp_time_avg = np.mean(times)
+    cpp_time_std = np.std(times)
+    
+    # Do once to "warm up" GPU
+    k_means_cuda(img, k, stab_error)
+    
+    times = _execution_time_step(k_means_cuda, img, k, stab_error, tries)
+    cuda_time_avg = np.mean(times)
+    cuda_time_std = np.std(times)
+
+    times = []
+    dev = pysignals.par.init_k_means(img.shape[0], img.shape[1], k)
+
+    for i in range(tries) :
+        dusk = time.time()
+        pysignals.par.k_means(img, k, stab_error, dev)
+        dawn = time.time()
+        times.append(dawn - dusk)
+    
+    pysignals.par.deinit_k_means(dev)
+
+    cuda_video_time_avg = np.mean(times)
+    cuda_video_time_std = np.std(times)
+
+    return py_time_avg, py_time_std, cpp_time_avg, cpp_time_std, cuda_time_avg, cuda_time_std, cuda_video_time_avg, cuda_video_time_std
+
+
+def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
+    py_time_avg, _, cpp_time_avg, _, cuda_time_avg, _, cuda_video_time_avg, _ = execution_time_avg (img, k, stab_error, tries)
+
+    labels = ['Python', 'C++', 'CUDA single image', 'CUDA video']
+    times = [py_time_avg, cpp_time_avg, cuda_time_avg, cuda_video_time_avg]
+
+    plt.bar(labels, times)
+
+    # Add labels
+    for i in range (len(labels)):
+        plt.text(i, times[i], times[i], ha = 'center')
+
+    plt.title('Average k-means execution time')
+    plt.xlabel('Programming Language')
+    plt.ylabel('Execution time [s]')
+    plt.savefig('../data/stats/times.jpg')
+

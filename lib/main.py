@@ -23,10 +23,13 @@ def test_algorithms () :
     res = k_means_cpp(img, 5, 0.5)
     cv.imwrite(f'../data/kmeans_cpp.jpg', res)
 
-    res = k_means_cuda(img, 5, 0.5)
+    res = k_means_cuda(img, 5, 0.5, False)
     cv.imwrite(f'../data/kmeans_cuda.jpg', res)
 
 
 if __name__ == '__main__':
-    test_exec_times()
+    # test_exec_times()
+    img = cv.imread('../data/car.jpg')
+    res = k_means_cuda(img, 5, 0.5, True)
+    cv.imwrite(f'../data/kmeans_cuda.jpg', res)
     

@@ -51,11 +51,62 @@ void k_means_kernel(
 }
 
 
+__global__
+void k_means_kernel_shared(
+    uint8_t* d_img, uint8_t* d_assigned_img,
+    uint8_t* d_prototypes, uint64_t *d_sums, uint64_t *d_counts,
+    size_t img_height, size_t img_width, uint64_t k)
+{
+    extern __shared__ uint8_t prot_shared[];
+
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // Collaborative loading of prototypes into the shared memory
+    int thread_idx = threadIdx.y * blockDim.x + threadIdx.x;
+    if (thread_idx < k * 3) {
+        prot_shared[thread_idx] = d_prototypes[thread_idx];
+    }
+    __syncthreads();
+
+    // Check if core in image boundary
+    if (i >= img_height || j >= img_width)
+        return;
+
+    // Algorithm as normal but with shared prototypes
+    uint8_t r = d_img[i * img_width * 3 + j * 3];
+    uint8_t g = d_img[i * img_width * 3 + j * 3 + 1];
+    uint8_t b = d_img[i * img_width * 3 + j * 3 + 2];
+
+    float min_distance = MAXFLOAT;
+    int assigned_prototype_index = -1;
+    for (int p = 0; p < k; p++)
+    {
+        uint8_t prot_r = prot_shared[p * 3];
+        uint8_t prot_g = prot_shared[p * 3 + 1];
+        uint8_t prot_b = prot_shared[p * 3 + 2];
+
+        float distance_squared = (r - prot_r) * (r - prot_r) + (g - prot_g) * (g - prot_g) + (b - prot_b) * (b - prot_b);
+        if (distance_squared < min_distance) {
+            min_distance = distance_squared;
+            assigned_prototype_index = p;
+        }
+    }
+    d_assigned_img[i * img_width + j] = assigned_prototype_index;
+
+    // Use atomic operations to safely update sums and counts
+    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3], r);
+    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3 + 1], g);
+    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3 + 2], b);
+    atomicAdd((unsigned long long int*) &d_counts[assigned_prototype_index], 1);
+}
+
+
 void k_means(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     uint64_t k, float_t stab_error,
-    const KmeansInfo& device_info)
+    const KmeansInfo& device_info, bool use_shared_mem)
 {   
     // Copy data to CUDA (initial)
     SAFE_CALL( cudaMemcpy(device_info.d_img, img, sizeof(uint8_t) * img_height * img_width * 3, cudaMemcpyHostToDevice));
@@ -98,11 +149,21 @@ void k_means(
         // Kernel call
         dim3 dim_grid = dim3(dev_info.grid.x, dev_info.grid.y, dev_info.grid.z);
         dim3 dim_block = dim3(dev_info.block.x, dev_info.block.y, dev_info.block.z);
-        k_means_kernel <<<dim_grid, dim_block>>> (
-            device_info.d_img, device_info.d_assigned_img, device_info.d_prototypes, 
-            device_info.d_sums, device_info.d_counts,
-            img_height, img_width, k
-        );
+
+        if (use_shared_mem) {
+            k_means_kernel_shared <<<dim_grid, dim_block, k * 3 * sizeof(uint8_t)>>> (
+                device_info.d_img, device_info.d_assigned_img, device_info.d_prototypes, 
+                device_info.d_sums, device_info.d_counts,
+                img_height, img_width, k
+            );
+        }
+        else {
+            k_means_kernel <<<dim_grid, dim_block>>> (
+                device_info.d_img, device_info.d_assigned_img, device_info.d_prototypes, 
+                device_info.d_sums, device_info.d_counts,
+                img_height, img_width, k
+            );
+        }
         CHECK_CUDA_ERROR;
 
         // Copy data back to CPU

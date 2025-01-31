@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import silhouette_score
 import time
+import os
 
 from algorithms import k_means, k_means_cpp, k_means_cuda
 
@@ -96,7 +97,7 @@ def metrics (img : np.ndarray, start_k : int, end_k : int) :
     plt.savefig('../data/stats/silhouette.jpg')
 
 
-def _execution_time_step (algorithm, img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
+def _execution_time_step (algorithm : callable, img : np.ndarray, k : int, stab_error : int, tries : int = 10) -> list[float] :
     times = []
 
     for i in range(tries) :
@@ -108,7 +109,7 @@ def _execution_time_step (algorithm, img : np.ndarray, k : int, stab_error : int
     return times
 
 
-def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
+def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int = 10) -> tuple :
     times = _execution_time_step(k_means, img, k, stab_error, tries)
     py_time_avg = np.mean(times)
     py_time_std = np.std(times)
@@ -142,16 +143,18 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
 
 
 def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
+
     py_time_avg, _, cpp_time_avg, _, cuda_time_avg, _, cuda_video_time_avg, _ = execution_time_avg (img, k, stab_error, tries)
 
     labels = ['Python', 'C++', 'CUDA single image', 'CUDA video']
     times = [py_time_avg, cpp_time_avg, cuda_time_avg, cuda_video_time_avg]
+    times_strings = ["{:.4f}".format(t) for t in times]
 
     plt.bar(labels, times)
 
     # Add labels
     for i in range (len(labels)):
-        plt.text(i, times[i], times[i], ha = 'center')
+        plt.text(i, times[i], times_strings[i], ha = 'center')
 
     plt.title('Average k-means execution time')
     plt.xlabel('Programming Language')

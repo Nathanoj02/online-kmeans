@@ -28,7 +28,7 @@ void parallel_submodule(pybind11::module& subm)
         "k_means",
         [](py::array_t<std::uint8_t> img_arr,
            std::uint64_t k, std::float_t stab_error,
-           cuda::KmeansInfo& dev_info) {
+           cuda::KmeansInfo& dev_info, bool use_shared_mem) {
 
             py::buffer_info img_buf = img_arr.request();
 
@@ -44,7 +44,7 @@ void parallel_submodule(pybind11::module& subm)
                 static_cast<std::uint8_t*>(result_buf.ptr),
                 static_cast<std::uint8_t*>(img_buf.ptr),
                 img_buf.shape[0], img_buf.shape[1],
-                k, stab_error, dev_info
+                k, stab_error, dev_info, use_shared_mem
             );
 
             return result;

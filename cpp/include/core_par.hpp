@@ -62,12 +62,13 @@ KmeansInfo init_k_means(
  * @param img_width Source image width
  * @param k Number of clusters
  * @param stab_error Error bound to reach to end the algorithm
+ * @param use_shared_mem Flag, use shared memory in CUDA kernel
  */
 void k_means(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     uint64_t k, float_t stab_error,
-    const KmeansInfo& device_info
+    const KmeansInfo& device_info, bool use_shared_mem
 );
 
 /**

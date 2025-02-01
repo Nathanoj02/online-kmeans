@@ -15,7 +15,7 @@ def k_means (img : np.ndarray, k : int, stab_error : float, max_iterations : int
 
     Parameters
     ----------
-    img : np.ndarray, 2D
+    img : np.ndarray, 3D
         Image
     k : int
         Number of clusters
@@ -87,7 +87,7 @@ def k_means_cpp (img : np.ndarray, k : int, stab_error : float, max_iterations :
 
     Parameters
     ----------
-    img : np.ndarray, 2D
+    img : np.ndarray, 3D
         Image
     k : int
         Number of clusters
@@ -112,7 +112,7 @@ def k_means_cuda (img : np.ndarray, k : int, stab_error : float, max_iterations 
 
     Parameters
     ----------
-    img : np.ndarray, 2D
+    img : np.ndarray, 3D
         Image
     k : int
         Number of clusters
@@ -139,7 +139,7 @@ def k_means_cuda_shared_mem (img : np.ndarray, k : int, stab_error : float, max_
 
     Parameters
     ----------
-    img : np.ndarray, 2D
+    img : np.ndarray, 3D
         Image
     k : int
         Number of clusters
@@ -166,7 +166,7 @@ def k_means_scikit (img : np.ndarray, k : int, stab_error : float, max_iteration
 
     Parameters
     ----------
-    img : np.ndarray, 2D
+    img : np.ndarray, 3D
         Image
     k : int
         Number of clusters

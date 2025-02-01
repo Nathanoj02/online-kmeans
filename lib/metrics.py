@@ -12,18 +12,43 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "p
 import pysignals
 
 
-def _elbow_method (img : np.ndarray, clustered_img : np.ndarray, k : int) :
-    # Calculate sum of squared error
+def _elbow_method (img : np.ndarray, clustered_img : np.ndarray) -> float :
+    '''
+    Calculate sum of squared error
+
+    Parameters
+    ----------
+    img : np.ndarray, 3D
+        Image
+    clustered_img : np.ndarray, 3D
+        Clustered image
+
+    Returns
+    -------
+    Sum of squared error
+    '''
     error = np.sum((img - clustered_img) ** 2)
     return error
 
 
 def elbow_method (img : np.ndarray, start_k : int, end_k : int) :
+    '''
+    Plot elbow method
+
+    Parameters
+    ----------
+    img : np.ndarray, 3D
+        Image
+    start_k : int
+        k to begin calculating metrics
+    end_k : int
+        k to end calculating metrics
+    '''
     error_arr = np.array([])
 
     for k in range (start_k, end_k + 1) :
         res = k_means_cpp(img, k, 0.01)
-        error = _elbow_method(img, res, k)
+        error = _elbow_method(img, res)
         error_arr = np.append(error_arr, error)
 
     # Plot
@@ -34,23 +59,45 @@ def elbow_method (img : np.ndarray, start_k : int, end_k : int) :
     plt.savefig('../data/stats/elbow.jpg')
 
 
-def _silhouette_method (img : np.ndarray, clustered_img : np.ndarray, k : int) :
+def _silhouette_method (img : np.ndarray, clustered_img : np.ndarray) -> float :
+    '''
+    Calculate average silhouette score
+
+    Parameters
+    ----------
+    img : np.ndarray, 3D
+        Image
+    clustered_img : np.ndarray, 3D
+        Clustered image
+
+    Returns
+    -------
+    Average silhouette score
+    '''
     img_flat = img.reshape(-1, 3)
     clustered_img_flat = clustered_img.reshape(-1, 3)
 
     # Preprocess clustered image
     _, labels = np.unique(clustered_img_flat, axis=0, return_inverse=True)
 
-    dusk = time.time()
     silhouette_avg = silhouette_score(img_flat, labels, metric='euclidean')
-    dawn = time.time()
-    print(silhouette_avg)
-    print(f'k = {k}\nTime spent = {(dawn - dusk) / 60} min', end='\n\n')
 
     return silhouette_avg
 
 
 def silhouette_method (img : np.ndarray, start_k : int, end_k : int) :
+    '''
+    Plot average silhouette method
+
+    Parameters
+    ----------
+    img : np.ndarray, 3D
+        Image
+    start_k : int
+        k to begin calculating metrics
+    end_k : int
+        k to end calculating metrics
+    '''
     sil_arr = []
     
     for k in range (start_k, end_k + 1) :
@@ -58,7 +105,7 @@ def silhouette_method (img : np.ndarray, start_k : int, end_k : int) :
         sys.stdout.flush()
         res = k_means_cpp(img, k, 0.01)
         
-        silhouette_avg = _silhouette_method(img, res, k)
+        silhouette_avg = _silhouette_method(img, res)
         sil_arr.append(silhouette_avg)
 
     # Plot
@@ -70,19 +117,38 @@ def silhouette_method (img : np.ndarray, start_k : int, end_k : int) :
 
 
 def metrics (img : np.ndarray, start_k : int, end_k : int) :
+    '''
+    Plot elbow method and average silhouette method
+
+    Parameters
+    ----------
+    img : np.ndarray, 3D
+        Image
+    start_k : int
+        k to begin calculating metrics
+    end_k : int
+        k to end calculating metrics
+    '''
     error_arr = []
     sil_arr = []
 
     for k in range(start_k, end_k + 1) :
+        print(f'Iteration {k} of {end_k}')
+        dusk = time.time()
+
         res = k_means_cpp(img, k, 0.01)
 
-        error = _elbow_method(img, res, k)
-        silhouette_avg = _silhouette_method(img, res, k) if k >= 2 else 0
+        error = _elbow_method(img, res)
+        silhouette_avg = _silhouette_method(img, res) if k >= 2 else 0
 
         error_arr.append(error)
         sil_arr.append(silhouette_avg)
+
+        dawn = time.time()
+        print('Time spent: {:.2f} mins'.format((dawn - dusk) / 60))
     
     # Plot elbow
+    plt.figure()
     plt.plot(np.arange(start_k, end_k + 1), error_arr, '-o')
     plt.title('Elbow method')
     plt.xlabel('Number of clusters k')
@@ -90,14 +156,35 @@ def metrics (img : np.ndarray, start_k : int, end_k : int) :
     plt.savefig('../data/stats/elbow.jpg')
 
     # Plot silhouette
+    plt.figure()
     plt.plot(np.arange(start_k, end_k + 1), sil_arr, '-o')
     plt.title('Silhouette method')
     plt.xlabel('Number of clusters k')
-    plt.ylabel('Average silouette width')
+    plt.ylabel('Average silhouette width')
     plt.savefig('../data/stats/silhouette.jpg')
 
 
 def _execution_time_step (algorithm : callable, img : np.ndarray, k : int, stab_error : int, tries : int = 10) -> list[float] :
+    '''
+    Calculate execution times of the algorithm parameter
+
+    Parameters
+    ----------
+    algorithm : callable
+        k-means algorithm on which calculate the execution times
+    img : np.ndarray, 3D
+        Image
+    k : int
+        Number of clusters
+    stab_error : float
+        Stabilization error
+    tries : int
+        Number of repetitions
+
+    Returns
+    -------
+    List of execution times
+    '''
     times = []
 
     for i in range(tries) :
@@ -110,6 +197,24 @@ def _execution_time_step (algorithm : callable, img : np.ndarray, k : int, stab_
 
 
 def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int = 10) -> tuple :
+    '''
+    Calculate means and standard deviations of execution times of algorithms
+
+    Parameters
+    ----------
+    img : np.ndarray, 3D
+        Image
+    k : int
+        Number of clusters
+    stab_error : float
+        Stabilization error
+    tries : int
+        Number of repetitions on which the average is calculated
+
+    Returns
+    -------
+    Tuple with means and standard deviations
+    '''
     times = _execution_time_step(k_means_scikit, img, k, stab_error, tries)
     py_time_avg = np.mean(times)
     py_time_std = np.std(times)
@@ -151,7 +256,20 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
 
 
 def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
+    '''
+    Make charts on execution times, Fps and Speedups
 
+    Parameters
+    ----------
+    img : np.ndarray, 3D
+        Image
+    k : int
+        Number of clusters
+    stab_error : float
+        Stabilization error
+    tries : int
+        Number of repetitions on which the average is calculated
+    '''
     py_time_avg, _, cpp_time_avg, _, cuda_time_avg, _, cuda_shared_time_avg, _, cuda_video_time_avg, _ = execution_time_avg (img, k, stab_error, tries)
 
     labels = ['Scikit-learn', 'C++', 'CUDA single image', 'CUDA shared memory', 'CUDA video']
@@ -186,7 +304,7 @@ def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : i
 
     plt.title('Average k-means Frames Per Second')
     plt.xlabel('Method')
-    plt.ylabel('FPS [Hz]')
+    plt.ylabel('FPS')
     plt.savefig('../data/stats/fps.jpg')
 
     # Speedups chart

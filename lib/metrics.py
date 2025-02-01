@@ -158,6 +158,7 @@ def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : i
     times = [py_time_avg, cpp_time_avg, cuda_time_avg, cuda_shared_time_avg, cuda_video_time_avg]
     times_strings = ["{:.4f}".format(t) for t in times]
 
+    plt.figure()
     plt.bar(labels, times)
     plt.xticks(rotation=60)
     plt.gcf().set_constrained_layout(True)
@@ -170,4 +171,38 @@ def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : i
     plt.xlabel('Method')
     plt.ylabel('Execution time [s]')
     plt.savefig('../data/stats/times.jpg')
+
+    # FPS chart
+    fps = [1 / t for t in times]
+    fps_strings = ["{:.1f}".format(f) for f in fps]
+
+    plt.figure()
+    plt.bar(labels, fps)
+    plt.xticks(rotation=60)
+    plt.gcf().set_constrained_layout(True)
+
+    for i in range (len(labels)):
+        plt.text(i, fps[i], fps_strings[i], ha = 'center')
+
+    plt.title('Average k-means Frames Per Second')
+    plt.xlabel('Method')
+    plt.ylabel('FPS [Hz]')
+    plt.savefig('../data/stats/fps.jpg')
+
+    # Speedups chart
+    speedups = [times[0] / t for t in times]
+    speedups_strings = ["{:.2f}".format(s) for s in speedups]
+
+    plt.figure()
+    plt.bar(labels, speedups)
+    plt.xticks(rotation=60)
+    plt.gcf().set_constrained_layout(True)
+
+    for i in range (len(labels)):
+        plt.text(i, speedups[i], speedups_strings[i], ha = 'center')
+
+    plt.title('Average k-means Speed-ups')
+    plt.xlabel('Method')
+    plt.ylabel('Speed-up')
+    plt.savefig('../data/stats/speedup.jpg')
 

@@ -5,7 +5,7 @@ from sklearn.metrics import silhouette_score
 import time
 import os
 
-from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem
+from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "python"))
 
@@ -110,7 +110,7 @@ def _execution_time_step (algorithm : callable, img : np.ndarray, k : int, stab_
 
 
 def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int = 10) -> tuple :
-    times = _execution_time_step(k_means, img, k, stab_error, tries)
+    times = _execution_time_step(k_means_scikit, img, k, stab_error, tries)
     py_time_avg = np.mean(times)
     py_time_std = np.std(times)
     
@@ -134,7 +134,7 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
 
     for i in range(tries) :
         dusk = time.time()
-        pysignals.par.k_means(img, k, stab_error, dev)
+        pysignals.par.k_means(img, k, stab_error, 300, dev, True)
         dawn = time.time()
         times.append(dawn - dusk)
     
@@ -154,18 +154,20 @@ def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : i
 
     py_time_avg, _, cpp_time_avg, _, cuda_time_avg, _, cuda_shared_time_avg, _, cuda_video_time_avg, _ = execution_time_avg (img, k, stab_error, tries)
 
-    labels = ['Python', 'C++', 'CUDA single image', 'CUDA shared memory', 'CUDA video']
+    labels = ['Scikit-learn', 'C++', 'CUDA single image', 'CUDA shared memory', 'CUDA video']
     times = [py_time_avg, cpp_time_avg, cuda_time_avg, cuda_shared_time_avg, cuda_video_time_avg]
     times_strings = ["{:.4f}".format(t) for t in times]
 
     plt.bar(labels, times)
+    plt.xticks(rotation=60)
+    plt.gcf().set_constrained_layout(True)
 
     # Add labels
     for i in range (len(labels)):
         plt.text(i, times[i], times_strings[i], ha = 'center')
 
     plt.title('Average k-means execution time')
-    plt.xlabel('Programming Language')
+    plt.xlabel('Method')
     plt.ylabel('Execution time [s]')
     plt.savefig('../data/stats/times.jpg')
 

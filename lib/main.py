@@ -1,6 +1,6 @@
 import cv2 as cv
 
-from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem
+from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit
 from metrics import elbow_method, silhouette_method, metrics, plot_execution_times
 
 
@@ -20,6 +20,9 @@ def test_algorithms () :
     res = k_means(img, 5, 0.5)
     cv.imwrite(f'../data/kmeans_python.jpg', res)
 
+    res = k_means_scikit(img, 5)
+    cv.imwrite(f'../data/kmeans_scikit.jpg', res)
+
     res = k_means_cpp(img, 5, 0.5)
     cv.imwrite(f'../data/kmeans_cpp.jpg', res)
 
@@ -31,8 +34,8 @@ def test_algorithms () :
 
 
 if __name__ == '__main__':
-    # test_exec_times()
-    img = cv.imread('../data/car.jpg')
-    res = k_means_cuda_shared_mem(img, 5, 0.5)
-    cv.imwrite(f'../data/kmeans_cuda.jpg', res)
+    test_exec_times()
+    # img = cv.imread('../data/car.jpg')
+    # res = k_means_scikit(img, 5, 0.5)
+    # cv.imwrite(f'../data/kmeans_cuda.jpg', res)
     

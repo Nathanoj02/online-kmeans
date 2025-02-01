@@ -77,7 +77,7 @@ def k_means (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
     return res
 
 
-def k_means_cpp (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
+def k_means_cpp (img : np.ndarray, k : int, stab_error : float, max_iterations : int = 300) -> np.ndarray :
     '''
     K-means algorithm executed in C++
 
@@ -87,8 +87,10 @@ def k_means_cpp (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
         Image
     k : int
         Number of clusters
-    stab_error :
+    stab_error : float
         Stabilization error 
+    max_iterations : int
+        Maximum number of iterations
 
     Returns
     -------
@@ -96,11 +98,11 @@ def k_means_cpp (img : np.ndarray, k : int, stab_error : float) -> np.ndarray :
     '''
     assert img is not None, 'Image not loaded correctly'
 
-    res = pysignals.seq.k_means(img, k, stab_error)
+    res = pysignals.seq.k_means(img, k, stab_error, max_iterations)
     return res
 
 
-def k_means_cuda (img : np.ndarray, k : int, stab_error : float, use_shared_mem : bool) -> np.ndarray :
+def k_means_cuda (img : np.ndarray, k : int, stab_error : float, max_iterations : int = 300) -> np.ndarray :
     '''
     K-means algorithm executed in CUDA C++
 
@@ -112,8 +114,8 @@ def k_means_cuda (img : np.ndarray, k : int, stab_error : float, use_shared_mem 
         Number of clusters
     stab_error : float
         Stabilization error
-    use_shared_mem : bool
-        Use shared memory in CUDA kernel
+    max_iterations : int
+        Maximum number of iterations
 
     Returns
     -------
@@ -122,6 +124,33 @@ def k_means_cuda (img : np.ndarray, k : int, stab_error : float, use_shared_mem 
     assert img is not None, 'Image not loaded correctly'
 
     dev = pysignals.par.init_k_means(img.shape[0], img.shape[1], k)
-    res = pysignals.par.k_means(img, k, stab_error, dev, use_shared_mem)
+    res = pysignals.par.k_means(img, k, stab_error, max_iterations, dev, False)
+    pysignals.par.deinit_k_means(dev)
+    return res
+
+
+def k_means_cuda_shared_mem (img : np.ndarray, k : int, stab_error : float, max_iterations : int = 300) -> np.ndarray :
+    '''
+    K-means algorithm executed in CUDA C++
+
+    Parameters
+    ----------
+    img : np.ndarray, 2D
+        Image
+    k : int
+        Number of clusters
+    stab_error : float
+        Stabilization error
+    max_iterations : int
+        Maximum number of iterations
+
+    Returns
+    -------
+    Clustered image
+    '''
+    assert img is not None, 'Image not loaded correctly'
+
+    dev = pysignals.par.init_k_means(img.shape[0], img.shape[1], k)
+    res = pysignals.par.k_means(img, k, stab_error, max_iterations, dev, True)
     pysignals.par.deinit_k_means(dev)
     return res

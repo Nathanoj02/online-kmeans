@@ -23,17 +23,17 @@ void k_means_kernel(
     if (i >= img_height || j >= img_width)
         return;
     
-    uint8_t r = d_img[i * img_width * 3 + j * 3];
+    uint8_t b = d_img[i * img_width * 3 + j * 3];
     uint8_t g = d_img[i * img_width * 3 + j * 3 + 1];
-    uint8_t b = d_img[i * img_width * 3 + j * 3 + 2];
+    uint8_t r = d_img[i * img_width * 3 + j * 3 + 2];
 
     float min_distance = MAXFLOAT;
     int assigned_prototype_index = -1;
     for (int p = 0; p < k; p++)
     {
-        uint8_t prot_r = d_prototypes[p * 3];
+        uint8_t prot_b = d_prototypes[p * 3];
         uint8_t prot_g = d_prototypes[p * 3 + 1];
-        uint8_t prot_b = d_prototypes[p * 3 + 2];
+        uint8_t prot_r = d_prototypes[p * 3 + 2];
 
         float distance_squared = (r - prot_r) * (r - prot_r) + (g - prot_g) * (g - prot_g) + (b - prot_b) * (b - prot_b);
         if (distance_squared < min_distance) {
@@ -44,9 +44,9 @@ void k_means_kernel(
     d_assigned_img[i * img_width + j] = assigned_prototype_index;
 
     // Use atomic operations to safely update sums and counts
-    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3], r);
+    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3], b);
     atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3 + 1], g);
-    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3 + 2], b);
+    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3 + 2], r);
     atomicAdd((unsigned long long int*) &d_counts[assigned_prototype_index], 1);
 }
 
@@ -74,17 +74,17 @@ void k_means_kernel_shared(
         return;
 
     // Algorithm as normal but with shared prototypes
-    uint8_t r = d_img[i * img_width * 3 + j * 3];
+    uint8_t b = d_img[i * img_width * 3 + j * 3];
     uint8_t g = d_img[i * img_width * 3 + j * 3 + 1];
-    uint8_t b = d_img[i * img_width * 3 + j * 3 + 2];
+    uint8_t r = d_img[i * img_width * 3 + j * 3 + 2];
 
     float min_distance = MAXFLOAT;
     int assigned_prototype_index = -1;
     for (int p = 0; p < k; p++)
     {
-        uint8_t prot_r = prot_shared[p * 3];
+        uint8_t prot_b = prot_shared[p * 3];
         uint8_t prot_g = prot_shared[p * 3 + 1];
-        uint8_t prot_b = prot_shared[p * 3 + 2];
+        uint8_t prot_r = prot_shared[p * 3 + 2];
 
         float distance_squared = (r - prot_r) * (r - prot_r) + (g - prot_g) * (g - prot_g) + (b - prot_b) * (b - prot_b);
         if (distance_squared < min_distance) {
@@ -95,9 +95,9 @@ void k_means_kernel_shared(
     d_assigned_img[i * img_width + j] = assigned_prototype_index;
 
     // Use atomic operations to safely update sums and counts
-    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3], r);
+    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3], b);
     atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3 + 1], g);
-    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3 + 2], b);
+    atomicAdd((unsigned long long int*) &d_sums[assigned_prototype_index * 3 + 2], r);
     atomicAdd((unsigned long long int*) &d_counts[assigned_prototype_index], 1);
 }
 
@@ -105,7 +105,7 @@ void k_means_kernel_shared(
 void k_means(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
-    uint64_t k, float_t stab_error,
+    uint64_t k, float_t stab_error, int max_iterations,
     const KmeansInfo& device_info, bool use_shared_mem)
 {   
     // Copy data to CUDA (initial)
@@ -137,7 +137,7 @@ void k_means(
     bool bound_reached = false;
 
     // Loop until prototypes are stable
-    for (int iteration_count = 0; !bound_reached; iteration_count++)
+    for (int iteration_count = 0; !bound_reached && iteration_count < max_iterations; iteration_count++)
     {
         memcpy(old_prototypes, prototypes, k * 3 * sizeof(uint8_t));    // Save old values for calculating differences
         
@@ -187,12 +187,12 @@ void k_means(
 
         for (int i = 0; i < k; i++)
         {
-            uint8_t prot_r = prototypes[i * 3];
+            uint8_t prot_b = prototypes[i * 3];
             uint8_t prot_g = prototypes[i * 3 + 1];
-            uint8_t prot_b = prototypes[i * 3 + 2];
-            uint8_t old_r = old_prototypes[i * 3];
+            uint8_t prot_r = prototypes[i * 3 + 2];
+            uint8_t old_b = old_prototypes[i * 3];
             uint8_t old_g = old_prototypes[i * 3 + 1];
-            uint8_t old_b = old_prototypes[i * 3 + 2];
+            uint8_t old_r = old_prototypes[i * 3 + 2];
 
             float distance_squared = pow(prot_r - old_r, 2) + pow(prot_g - old_g, 2) + pow(prot_b - old_b, 2);
 

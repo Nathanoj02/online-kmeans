@@ -8,7 +8,7 @@ namespace signals
 void k_means (
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
-    uint64_t k, float_t stab_error) 
+    uint64_t k, float_t stab_error, int max_iterations) 
 {
     srand((unsigned) time(NULL));
 
@@ -30,7 +30,7 @@ void k_means (
     bool bound_reached = false;
 
     // Loop until prototypes are stable
-    for (int iteration_count = 0; !bound_reached; iteration_count++)
+    for (int iteration_count = 0; !bound_reached && iteration_count < max_iterations; iteration_count++)
     {
         memcpy(old_prototypes, prototypes, k * 3 * sizeof(uint8_t));    // Save old values for calculating differences
 
@@ -43,17 +43,17 @@ void k_means (
         {
             for (int j = 0; j < img_width; j++)
             {
-                uint8_t r = img[i * img_width * 3 + j * 3];
+                uint8_t b = img[i * img_width * 3 + j * 3];
                 uint8_t g = img[i * img_width * 3 + j * 3 + 1];
-                uint8_t b = img[i * img_width * 3 + j * 3 + 2];
+                uint8_t r = img[i * img_width * 3 + j * 3 + 2];
 
                 float min_distance = MAXFLOAT;
                 int assigned_prototype_index = -1;
                 for (int p = 0; p < k; p++)
                 {
-                    uint8_t prot_r = prototypes[p * 3];
+                    uint8_t prot_b = prototypes[p * 3];
                     uint8_t prot_g = prototypes[p * 3 + 1];
-                    uint8_t prot_b = prototypes[p * 3 + 2];
+                    uint8_t prot_r = prototypes[p * 3 + 2];
 
                     float distance = sqrt(pow(r - prot_r, 2) + pow(g - prot_g, 2) + pow(b - prot_b, 2));
                     if (distance < min_distance) {
@@ -63,9 +63,9 @@ void k_means (
                 }
                 assigned_img[i * img_width + j] = assigned_prototype_index;
 
-                sums[assigned_prototype_index * 3] += r;
+                sums[assigned_prototype_index * 3] += b;
                 sums[assigned_prototype_index * 3 + 1] += g;
-                sums[assigned_prototype_index * 3 + 2] += b;
+                sums[assigned_prototype_index * 3 + 2] += r;
                 counts[assigned_prototype_index]++;
             }
         }
@@ -75,9 +75,9 @@ void k_means (
         {
             if (counts[i] != 0)
             {
-                prototypes[i * 3] = sums[i * 3] / counts[i];
-                prototypes[i * 3 + 1] = sums[i * 3 + 1] / counts[i];
-                prototypes[i * 3 + 2] = sums[i * 3 + 2] / counts[i];
+                prototypes[i * 3] = (uint8_t) ((float) sums[i * 3] / counts[i]);
+                prototypes[i * 3 + 1] = (uint8_t) ((float) sums[i * 3 + 1] / counts[i]);
+                prototypes[i * 3 + 2] = (uint8_t) ((float) sums[i * 3 + 2] / counts[i]);
             }
         }
 
@@ -86,12 +86,12 @@ void k_means (
 
         for (int i = 0; i < k; i++)
         {
-            uint8_t prot_r = prototypes[i * 3];
+            uint8_t prot_b = prototypes[i * 3];
             uint8_t prot_g = prototypes[i * 3 + 1];
-            uint8_t prot_b = prototypes[i * 3 + 2];
-            uint8_t old_r = old_prototypes[i * 3];
+            uint8_t prot_r = prototypes[i * 3 + 2];
+            uint8_t old_b = old_prototypes[i * 3];
             uint8_t old_g = old_prototypes[i * 3 + 1];
-            uint8_t old_b = old_prototypes[i * 3 + 2];
+            uint8_t old_r = old_prototypes[i * 3 + 2];
 
             float distance_squared = pow(prot_r - old_r, 2) + pow(prot_g - old_g, 2) + pow(prot_b - old_b, 2);
 
@@ -114,6 +114,13 @@ void k_means (
             dst[i * img_width * 3 + j * 3 + 2] = prototypes[index * 3 + 2];
         }
     }
+    
+    // Free memory
+    free (prototypes);
+    free (assigned_img);
+    free (sums);
+    free (counts);
+    free (old_prototypes);
 }
 
 } // namespace signals

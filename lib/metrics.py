@@ -5,7 +5,7 @@ from sklearn.metrics import silhouette_score
 import time
 import os
 
-from algorithms import k_means, k_means_cpp, k_means_cuda
+from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "python"))
 
@@ -125,6 +125,10 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
     cuda_time_avg = np.mean(times)
     cuda_time_std = np.std(times)
 
+    times = _execution_time_step(k_means_cuda_shared_mem, img, k, stab_error, tries)
+    cuda_shared_time_avg = np.mean(times)
+    cuda_shared_time_std = np.std(times)
+
     times = []
     dev = pysignals.par.init_k_means(img.shape[0], img.shape[1], k)
 
@@ -139,15 +143,19 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
     cuda_video_time_avg = np.mean(times)
     cuda_video_time_std = np.std(times)
 
-    return py_time_avg, py_time_std, cpp_time_avg, cpp_time_std, cuda_time_avg, cuda_time_std, cuda_video_time_avg, cuda_video_time_std
+    return py_time_avg, py_time_std, \
+        cpp_time_avg, cpp_time_std, \
+        cuda_time_avg, cuda_time_std, \
+        cuda_shared_time_avg, cuda_shared_time_std, \
+        cuda_video_time_avg, cuda_video_time_std
 
 
 def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
 
-    py_time_avg, _, cpp_time_avg, _, cuda_time_avg, _, cuda_video_time_avg, _ = execution_time_avg (img, k, stab_error, tries)
+    py_time_avg, _, cpp_time_avg, _, cuda_time_avg, _, cuda_shared_time_avg, _, cuda_video_time_avg, _ = execution_time_avg (img, k, stab_error, tries)
 
-    labels = ['Python', 'C++', 'CUDA single image', 'CUDA video']
-    times = [py_time_avg, cpp_time_avg, cuda_time_avg, cuda_video_time_avg]
+    labels = ['Python', 'C++', 'CUDA single image', 'CUDA shared memory', 'CUDA video']
+    times = [py_time_avg, cpp_time_avg, cuda_time_avg, cuda_shared_time_avg, cuda_video_time_avg]
     times_strings = ["{:.4f}".format(t) for t in times]
 
     plt.bar(labels, times)

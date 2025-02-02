@@ -1,6 +1,6 @@
 import cv2 as cv
 
-from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit
+from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit, k_means_video
 from metrics import metrics, plot_execution_times
 
 
@@ -33,9 +33,11 @@ def test_algorithms () :
     cv.imwrite(f'../data/kmeans_cuda_shared.jpg', res)
 
 
+def test_video () :
+    cap = cv.VideoCapture('../data/walking.mp4')
+    k_means_video(cap, 3, 0.5)
+
 
 if __name__ == '__main__':
-    img = cv.imread('../data/video_frame.jpg')
-    res = k_means_cuda_shared_mem(img, 3, 0.5)
-    cv.imwrite(f'../data/kmeans_cuda_shared.jpg', res)
+    test_video()
     

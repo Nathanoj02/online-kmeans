@@ -160,6 +160,22 @@ def k_means_cuda_shared_mem (img : np.ndarray, k : int, stab_error : float, max_
     return res
 
 
+def k_means_cuda_init (img : np.ndarray, k : int) :
+    assert img is not None, 'Image not loaded correctly'
+
+    dev = pysignals.par.init_k_means(img.shape[0], img.shape[1], k)
+    return dev
+
+
+def k_means_cuda_deinit (dev) :
+    pysignals.par.deinit_k_means(dev)
+
+
+def k_means_cuda_exec (img : np.ndarray, k : int, stab_error : float, dev, max_iterations : int = 300) :
+    res = pysignals.par.k_means(img, k, stab_error, max_iterations, dev, True)
+    return res
+
+
 def k_means_scikit (img : np.ndarray, k : int, stab_error : float, max_iterations : int = 300) :
     '''
     K-means algorithm from Scikit Learn
@@ -194,3 +210,38 @@ def k_means_scikit (img : np.ndarray, k : int, stab_error : float, max_iteration
 
     # Reshape back to original image shape
     return res.reshape(img.shape)
+
+
+def k_means_video (cap : cv.VideoCapture, k : int, stab_error : float, max_iterations : int = 300) :
+    assert cap.isOpened(), 'Video not opened correctly'
+
+    fps = cap.get(cv.CAP_PROP_FPS)
+    frame_num = 1
+    tot_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+
+    while cap.isOpened() :
+        # Capture each frame
+        ret, frame = cap.read()
+
+        if not ret :
+            break
+    
+        if frame_num == 1 :
+            video_res = cv.VideoWriter('../data/video_res.mp4', cv.VideoWriter_fourcc(*'mp4v'), fps, (frame.shape[1], frame.shape[0]))
+            dev = k_means_cuda_init(frame, k)
+        
+        res = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations)
+        video_res.write(res)
+
+        print(f'\rFrame {frame_num} of {tot_frames} : {frame_num * 100 // tot_frames} %', end = '')
+
+        frame_num += 1
+
+    k_means_cuda_deinit(dev)
+    print() # Newline
+
+    # Save video
+    video_res.release()
+        
+        
+        

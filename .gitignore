@@ -160,4 +160,4 @@ cython_debug/
 
 # Custom
 .vscode
-.mp4
+*.mp4

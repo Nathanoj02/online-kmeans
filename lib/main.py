@@ -1,6 +1,6 @@
 import cv2 as cv
 
-from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit, k_means_video
+from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit, k_means_video, k_means_live
 from metrics import metrics, plot_execution_times
 
 
@@ -38,6 +38,10 @@ def test_video () :
     k_means_video(cap, 3, 0.5)
 
 
+def test_live () :
+    k_means_live(3, 0.5)
+
+
 if __name__ == '__main__':
-    test_video()
+    test_live()
     

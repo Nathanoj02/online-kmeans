@@ -35,7 +35,7 @@ def test_algorithms () :
 
 def test_video () :
     cap = cv.VideoCapture('../data/walking.mp4')
-    k_means_video(cap, 3, 0.5)
+    k_means_video(cap, 3, 0.5, save_path = '../data/video_res.mp4')
 
 
 def test_live () :

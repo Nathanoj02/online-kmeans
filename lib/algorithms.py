@@ -212,7 +212,23 @@ def k_means_scikit (img : np.ndarray, k : int, stab_error : float, max_iteration
     return res.reshape(img.shape)
 
 
-def k_means_video (cap : cv.VideoCapture, k : int, stab_error : float, max_iterations : int = 300) :
+def k_means_video (cap : cv.VideoCapture, k : int, stab_error : float, save_path : str, max_iterations : int = 300) :
+    '''
+    K-means algorithm applied on a video
+
+    Parameters
+    ----------
+    cap : cv.VideoCapture
+        Source video
+    k : int
+        Number of clusters
+    stab_error : float
+        Stabilization error
+    save_path : str
+        Path where the clustered video is saved
+    max_iterations : int
+        Maximum number of iterations
+    '''
     assert cap.isOpened(), 'Video not opened correctly'
 
     fps = cap.get(cv.CAP_PROP_FPS)
@@ -227,7 +243,7 @@ def k_means_video (cap : cv.VideoCapture, k : int, stab_error : float, max_itera
             break
     
         if frame_num == 1 :
-            video_res = cv.VideoWriter('../data/video_res.mp4', cv.VideoWriter_fourcc(*'mp4v'), fps, (frame.shape[1], frame.shape[0]))
+            video_res = cv.VideoWriter(save_path, cv.VideoWriter_fourcc(*'mp4v'), fps, (frame.shape[1], frame.shape[0]))
             dev = k_means_cuda_init(frame, k)
         
         res = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations)
@@ -245,6 +261,18 @@ def k_means_video (cap : cv.VideoCapture, k : int, stab_error : float, max_itera
         
 
 def k_means_live (k : int, stab_error : float, max_iterations : int = 300) :
+    '''
+    K-means algorithm in real-time using camera from PC
+
+    Parameters
+    ----------
+    k : int
+        Number of clusters
+    stab_error : float
+        Stabilization error
+    max_iterations : int
+        Maximum number of iterations
+    '''
     cap = cv.VideoCapture(0)
     assert cap.isOpened(), 'Camera not opened correctly'
 

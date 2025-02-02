@@ -1,4 +1,5 @@
 import cv2 as cv
+import sys
 
 from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit, k_means_video, k_means_live
 from metrics import metrics, plot_execution_times
@@ -33,15 +34,91 @@ def test_algorithms () :
     cv.imwrite(f'../data/kmeans_cuda_shared.jpg', res)
 
 
-def test_video () :
-    cap = cv.VideoCapture('../data/walking.mp4')
-    k_means_video(cap, 3, 0.5, save_path = '../data/video_res.mp4')
+def test_image (algorithm : callable, source_path : str, dest_path : str, k : int, stab_error : int) :
+    img = cv.imread(source_path)
+    res = algorithm(img, k, stab_error)
+    cv.imwrite(dest_path, res)
+
+
+def test_video (source_path : str, dest_path : str, k : int, stab_error : int) :
+    cap = cv.VideoCapture(source_path)
+    k_means_video(cap, k, stab_error, save_path = dest_path)
 
 
 def test_live () :
     k_means_live(3, 0.5)
 
 
+def custom_tests () :
+    img = cv.imread('../data/car.jpg')
+
+    res = k_means_cuda_shared_mem(img, 3, 0.5)
+    cv.imwrite(f'../data/kmeans_cudashared.jpg', res)
+
+
 if __name__ == '__main__':
-    test_live()
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-o', '--operation')
+    parser.add_argument('-a', '--algorithm', default='cudashared')
+    parser.add_argument('-k', '--k', default=2)
+    parser.add_argument('-e', '--error', default=0.5)
+    parser.add_argument('-s', '--source')
+    parser.add_argument('-d', '--dest')
+
+    args = parser.parse_args()
+
+    if len(sys.argv) == 1 :
+        custom_tests()
+        sys.exit(0)
+
+    if args.operation is None :
+        print('No operation passed as argument - Use -o or --operation')
+        sys.exit(-1)
+    
+    if args.operation not in ['image', 'video'] :
+        raise NotImplementedError('Operation not implemented - use \'image\' or \'video\'')
+    
+    if args.source is None :
+        print('No input path passed as argument - Use -s or --source')
+        sys.exit(-1)
+
+    if args.dest is None :
+        print('No output path passed as argument - Use -d or --dest')
+        sys.exit(-1)
+
+    k = int(args.k)
+    error = float(args.error)
+
+    if k <= 0 :
+        print('K value must be greater than 0')
+        sys.exit(-1)
+
+    if error <= 0 :
+        print('Error must be greater than 0')
+        sys.exit(-1)
+    
+    match args.operation :
+        case 'image' :
+            match args.algorithm :
+                case 'python' :
+                    alg = k_means_scikit
+                case 'cpp' :
+                    alg = k_means_cpp
+                case 'cuda' :
+                    alg = k_means_cuda
+                case 'cudashared' :
+                    alg = k_means_cuda_shared_mem
+                case _ :
+                    raise NotImplementedError('Algorithm not implemented yet. Must be in [\'python\', \'cpp\', \'cuda\', \'cudashared\']')
+            
+            test_image(alg, args.source, args.dest, k, error)
+
+        case 'video' :
+            test_video(args.source, args.dest, k, error)
+        case _ :
+            raise NotImplementedError('Operation not implemented - use \'image\' or \'video\'')
     

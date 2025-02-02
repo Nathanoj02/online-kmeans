@@ -22,3 +22,35 @@ cmake ..
 ```
 make -j
 ```
+
+## Arguments
+Operation (image, video)
+```
+-o image
+```
+
+Source image / video path
+```
+-s path
+```
+
+Destination image / video path
+```
+-d path
+```
+
+### Optional arguments
+k value (int)
+```
+-k value
+```
+
+Max tolerance / error value (float)
+```
+-e value
+```
+
+Algorithm (only for image) (python, cpp, cuda, cudashared)
+```
+-a algorithm
+```

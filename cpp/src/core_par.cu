@@ -106,7 +106,8 @@ void k_means(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     uint64_t k, float_t stab_error, int max_iterations,
-    const KmeansInfo& device_info, bool use_shared_mem)
+    const KmeansInfo& device_info, bool use_shared_mem,
+    uint8_t* stored_prototypes, bool use_stored_prototypes)
 {   
     // Copy data to CUDA (initial)
     SAFE_CALL( cudaMemcpy(device_info.d_img, img, sizeof(uint8_t) * img_height * img_width * 3, cudaMemcpyHostToDevice));
@@ -114,10 +115,17 @@ void k_means(
     srand((unsigned) time(NULL));
 
     // Create k prototypes with random values
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * 3);
-    for (int i = 0; i < k * 3; i++) 
+    uint8_t* prototypes;
+    
+    if (use_stored_prototypes)
     {
-        prototypes[i] = rand() % 256;
+        prototypes = stored_prototypes;
+    }
+    else
+    {
+        prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * 3);
+        for (int i = 0; i < k * 3; i++) 
+            prototypes[i] = rand() % 256;
     }
     
     uint8_t* assigned_img = (uint8_t*) malloc (sizeof(uint8_t) * img_height * img_width);  // Map : pixels -> cluster number
@@ -215,10 +223,24 @@ void k_means(
             dst[i * img_width * 3 + j * 3 + 2] = prototypes[index * 3 + 2];
         }
     }
+
+    // Copy prototypes to stored prototypes to return them
+    if (!use_stored_prototypes)
+    {
+        memcpy(stored_prototypes, prototypes, k * 3 * sizeof(uint8_t));
+
+        free(prototypes);
+    }
+
+    // Free memory
+    free(assigned_img);
+    free(counts);
+    free(sums);
+    free(old_prototypes);
 }
 
 
-KmeansInfo init_k_means(size_t img_height, size_t img_width, uint64_t k)
+KmeansInfo init_k_means (size_t img_height, size_t img_width, uint64_t k)
 {
     KmeansInfo device_info;
     SAFE_CALL( cudaMalloc(&device_info.d_img, sizeof(uint8_t) * img_height * img_width * 3) );
@@ -231,7 +253,7 @@ KmeansInfo init_k_means(size_t img_height, size_t img_width, uint64_t k)
 }
 
 
-void deinit_k_means(KmeansInfo& device_info)
+void deinit_k_means (KmeansInfo& device_info)
 {
     SAFE_CALL( cudaFree( device_info.d_img ) );
     SAFE_CALL( cudaFree( device_info.d_assigned_img ) );

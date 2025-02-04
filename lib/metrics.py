@@ -238,7 +238,7 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
 
     for i in range(tries) :
         dusk = time.time()
-        k_means_cuda_exec(img, k, stab_error, dev=dev)
+        k_means_cuda_exec(img, k, stab_error, dev=dev, use_shared_mem = True)
         dawn = time.time()
         times.append(dawn - dusk)
     

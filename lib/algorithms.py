@@ -106,7 +106,8 @@ def k_means_cpp (img : np.ndarray, k : int, stab_error : float, max_iterations :
     return res
 
 
-def k_means_cuda (img : np.ndarray, k : int, stab_error : float, max_iterations : int = 300) -> np.ndarray :
+def k_means_cuda (img : np.ndarray, k : int, stab_error : float, \
+                  max_iterations : int = 300, prototypes : np.ndarray = None) -> np.ndarray :
     '''
     K-means algorithm executed in CUDA C++
 
@@ -120,6 +121,8 @@ def k_means_cuda (img : np.ndarray, k : int, stab_error : float, max_iterations 
         Stabilization error
     max_iterations : int
         Maximum number of iterations
+    prototypes : np.ndarray, 2D
+        Array of prototypes to use instead of random ones
 
     Returns
     -------
@@ -128,12 +131,13 @@ def k_means_cuda (img : np.ndarray, k : int, stab_error : float, max_iterations 
     assert img is not None, 'Image not loaded correctly'
 
     dev = pysignals.par.init_k_means(img.shape[0], img.shape[1], k)
-    res = pysignals.par.k_means(img, k, stab_error, max_iterations, dev, False)
+    res, updated_prototypes = k_means_cuda_exec(img, k, stab_error, dev, max_iterations, False, prototypes)
     pysignals.par.deinit_k_means(dev)
-    return res
+    return res, updated_prototypes
 
 
-def k_means_cuda_shared_mem (img : np.ndarray, k : int, stab_error : float, max_iterations : int = 300) -> np.ndarray :
+def k_means_cuda_shared_mem (img : np.ndarray, k : int, stab_error : float, \
+                             max_iterations : int = 300, prototypes : np.ndarray = None) -> np.ndarray :
     '''
     K-means algorithm executed in CUDA C++
 
@@ -147,6 +151,8 @@ def k_means_cuda_shared_mem (img : np.ndarray, k : int, stab_error : float, max_
         Stabilization error
     max_iterations : int
         Maximum number of iterations
+    prototypes : np.ndarray, 2D
+        Array of prototypes to use instead of random ones
 
     Returns
     -------
@@ -155,9 +161,9 @@ def k_means_cuda_shared_mem (img : np.ndarray, k : int, stab_error : float, max_
     assert img is not None, 'Image not loaded correctly'
 
     dev = pysignals.par.init_k_means(img.shape[0], img.shape[1], k)
-    res = pysignals.par.k_means(img, k, stab_error, max_iterations, dev, True)
+    res, updated_prototypes = k_means_cuda_exec(img, k, stab_error, dev, max_iterations, True, prototypes)
     pysignals.par.deinit_k_means(dev)
-    return res
+    return res, updated_prototypes
 
 
 def k_means_cuda_init (img : np.ndarray, k : int) :
@@ -171,9 +177,16 @@ def k_means_cuda_deinit (dev) :
     pysignals.par.deinit_k_means(dev)
 
 
-def k_means_cuda_exec (img : np.ndarray, k : int, stab_error : float, dev, max_iterations : int = 300) :
-    res = pysignals.par.k_means(img, k, stab_error, max_iterations, dev, True)
-    return res
+def k_means_cuda_exec (img : np.ndarray, k : int, stab_error : float, dev, max_iterations : int = 300, \
+                       use_shared_mem : bool = True, prototypes : np.ndarray = None) :
+    use_stored_prototypes = True
+    
+    if prototypes is None :
+        use_stored_prototypes = False
+        prototypes = np.zeros((k, 3), dtype=np.int8)
+
+    res, updated_prototypes = pysignals.par.k_means(img, k, stab_error, max_iterations, dev, use_shared_mem, prototypes, use_stored_prototypes)
+    return res, updated_prototypes
 
 
 def k_means_scikit (img : np.ndarray, k : int, stab_error : float, max_iterations : int = 300) :
@@ -246,7 +259,76 @@ def k_means_video (cap : cv.VideoCapture, k : int, stab_error : float, save_path
             video_res = cv.VideoWriter(save_path, cv.VideoWriter_fourcc(*'mp4v'), fps, (frame.shape[1], frame.shape[0]))
             dev = k_means_cuda_init(frame, k)
         
-        res = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations)
+        res, _ = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations, use_shared_mem = True)
+        video_res.write(res)
+
+        print(f'\rFrame {frame_num} of {tot_frames} : {frame_num * 100 // tot_frames} %', end = '')
+
+        frame_num += 1
+
+    k_means_cuda_deinit(dev)
+    print() # Newline
+
+    # Save video
+    video_res.release()
+
+
+def k_means_video_calibration (cap : cv.VideoCapture, k : int, stab_error : float, save_path : str, \
+                               max_iterations : int = 300, calibration_frames : int = 10) :
+    '''
+    K-means algorithm applied on a video with calibration for first frames
+
+    Parameters
+    ----------
+    cap : cv.VideoCapture
+        Source video
+    k : int
+        Number of clusters
+    stab_error : float
+        Stabilization error
+    save_path : str
+        Path where the clustered video is saved
+    max_iterations : int
+        Maximum number of iterations
+    calibration_frames : int
+        Number of frames in which calibration is operative
+    '''
+    assert cap.isOpened(), 'Video not opened correctly'
+
+    fps = cap.get(cv.CAP_PROP_FPS)
+    frame_num = 1
+    tot_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+
+    # Set max error and best prototypes
+    best_error = float("inf")
+    best_prototypes = np.random.randint(0, 256, size = (k, 3))
+
+    while cap.isOpened() :
+        # Capture each frame
+        ret, frame = cap.read()
+
+        if not ret :
+            break
+    
+        if frame_num == 1 :
+            video_res = cv.VideoWriter(save_path, cv.VideoWriter_fourcc(*'mp4v'), fps, (frame.shape[1], frame.shape[0]))
+            dev = k_means_cuda_init(frame, k)
+        
+        # During calibration
+        if frame_num <= calibration_frames :
+            res, prototypes = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations, use_shared_mem = True)
+        
+            # Perform sum of squares metric
+            error = np.sum((frame - res) ** 2)
+
+            if error < best_error :
+                best_error = error
+                best_prototypes = np.copy(prototypes)
+
+        # After calibration
+        else :
+            res, _ = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations, use_shared_mem = True, prototypes = best_prototypes)
+
         video_res.write(res)
 
         print(f'\rFrame {frame_num} of {tot_frames} : {frame_num * 100 // tot_frames} %', end = '')
@@ -291,7 +373,7 @@ def k_means_live (k : int, stab_error : float, max_iterations : int = 300) :
         if frame_num == 1 :
             dev = k_means_cuda_init(frame, k)
         
-        res = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations)
+        res, _ = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations, use_shared_mem = True)
         cv.imshow('Original', frame)
         cv.imshow('Clustered', res)
 

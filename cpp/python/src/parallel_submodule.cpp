@@ -28,7 +28,8 @@ void parallel_submodule(pybind11::module& subm)
         "k_means",
         [](py::array_t<std::uint8_t> img_arr,
            std::uint64_t k, std::float_t stab_error, int max_iterations,
-           cuda::KmeansInfo& dev_info, bool use_shared_mem) {
+           cuda::KmeansInfo& dev_info, bool use_shared_mem,
+           py::array_t<std::uint8_t> prototypes_arr, bool use_stored_prototypes) {
 
             py::buffer_info img_buf = img_arr.request();
 
@@ -40,15 +41,26 @@ void parallel_submodule(pybind11::module& subm)
             result[py::make_tuple(py::ellipsis())] = 0;
             py::buffer_info result_buf = result.request();
 
+            py::buffer_info prot_buf = prototypes_arr.request();
+
+            if (prot_buf.ndim != 2)
+                throw std::runtime_error("Number of prototypes dimensions must be 2");
+
             cuda::k_means(
                 static_cast<std::uint8_t*>(result_buf.ptr),
                 static_cast<std::uint8_t*>(img_buf.ptr),
                 img_buf.shape[0], img_buf.shape[1],
                 k, stab_error, max_iterations,
-                dev_info, use_shared_mem
+                dev_info, use_shared_mem,
+                static_cast<std::uint8_t*>(prot_buf.ptr), use_stored_prototypes
             );
 
-            return result;
+            // Create an array for updated prototypes and copy the data
+            std::vector<size_t> shape = { static_cast<size_t>(k), static_cast<size_t>(3) };
+            auto updated_prototypes = py::array_t<std::uint8_t>(shape);
+            std::memcpy(updated_prototypes.mutable_data(), prot_buf.ptr, k * 3 * sizeof(std::uint8_t));
+
+            return py::make_tuple(result, updated_prototypes);
         });
 
     subm.def(

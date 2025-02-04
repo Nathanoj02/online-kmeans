@@ -1,7 +1,8 @@
 import cv2 as cv
 import sys
 
-from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit, k_means_video, k_means_live
+from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit, \
+    k_means_video, k_means_live, k_means_video_calibration
 from metrics import metrics, plot_execution_times
 
 
@@ -27,17 +28,22 @@ def test_algorithms () :
     res = k_means_cpp(img, 3, 0.5)
     cv.imwrite(f'../data/kmeans_cpp.jpg', res)
 
-    res = k_means_cuda(img, 3, 0.5)
+    res, _ = k_means_cuda(img, 3, 0.5)
     cv.imwrite(f'../data/kmeans_cuda.jpg', res)
 
-    res = k_means_cuda_shared_mem(img, 3, 0.5)
+    res, _ = k_means_cuda_shared_mem(img, 3, 0.5)
     cv.imwrite(f'../data/kmeans_cuda_shared.jpg', res)
 
 
 def test_image (algorithm : callable, source_path : str, dest_path : str, k : int, stab_error : int) :
     img = cv.imread(source_path)
     res = algorithm(img, k, stab_error)
-    cv.imwrite(dest_path, res)
+
+    if isinstance(res, tuple) :
+        res_img, _ = res 
+        cv.imwrite(dest_path, res_img)
+    else :
+        cv.imwrite(dest_path, res)
 
 
 def test_video (source_path : str, dest_path : str, k : int, stab_error : int) :
@@ -49,11 +55,13 @@ def test_live () :
     k_means_live(3, 0.5)
 
 
-def custom_tests () :
-    img = cv.imread('../data/car.jpg')
+def test_video_calibration (source_path : str, dest_path : str, k : int, stab_error : int) :
+    cap = cv.VideoCapture(source_path)
+    k_means_video_calibration (cap, k, stab_error, save_path = dest_path)
 
-    res = k_means_cuda_shared_mem(img, 3, 0.5)
-    cv.imwrite(f'../data/kmeans_cudashared.jpg', res)
+
+def custom_tests () :
+    test_video_calibration('../data/walking.mp4', '../data/video_res_cali.mp4', 3, 0.5)
 
 
 if __name__ == '__main__':

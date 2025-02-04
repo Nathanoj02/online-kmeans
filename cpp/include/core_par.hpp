@@ -63,12 +63,15 @@ KmeansInfo init_k_means(
  * @param k Number of clusters
  * @param stab_error Error bound to reach to end the algorithm
  * @param use_shared_mem Flag, use shared memory in CUDA kernel
+ * @param stored_prototypes Memory zone where prototypes can be upload and also where the resulting prototypes are returned
+ * @param use_stored_prototypes Use stored_prototypes instead of random ones
  */
 void k_means(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     uint64_t k, float_t stab_error, int max_iterations,
-    const KmeansInfo& device_info, bool use_shared_mem
+    const KmeansInfo& device_info, bool use_shared_mem,
+    uint8_t* stored_prototypes, bool use_stored_prototypes
 );
 
 /**

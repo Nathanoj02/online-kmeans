@@ -61,7 +61,8 @@ def test_video_calibration (source_path : str, dest_path : str, k : int, stab_er
 
 
 def custom_tests () :
-    test_video_calibration('../data/walking.mp4', '../data/video_res_cali.mp4', 3, 0.5)
+    # test_video_calibration('../data/walking.mp4', '../data/video_res_cali.mp4', 3, 0.5)
+    test_exec_times()
 
 
 if __name__ == '__main__':
@@ -126,7 +127,7 @@ if __name__ == '__main__':
             test_image(alg, args.source, args.dest, k, error)
 
         case 'video' :
-            test_video(args.source, args.dest, k, error)
+            test_video_calibration(args.source, args.dest, k, error)
         case _ :
             raise NotImplementedError('Operation not implemented - use \'image\' or \'video\'')
     

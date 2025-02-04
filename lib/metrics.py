@@ -214,6 +214,10 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
     -------
     Tuple with means and standard deviations
     '''
+    # Set max error and best prototypes
+    best_error = float("inf")
+    best_prototypes = np.random.randint(0, 256, size = (k, 3))
+
     times = _execution_time_step(k_means_scikit, img, k, stab_error, tries)
     py_time_avg = np.mean(times)
     py_time_std = np.std(times)
@@ -235,7 +239,7 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
 
     times = []
     dev = k_means_cuda_init(img, k)
-
+    
     for i in range(tries) :
         dusk = time.time()
         k_means_cuda_exec(img, k, stab_error, dev=dev, use_shared_mem = True)
@@ -247,11 +251,41 @@ def execution_time_avg (img : np.ndarray, k : int, stab_error : int, tries : int
     cuda_video_time_avg = np.mean(times)
     cuda_video_time_std = np.std(times)
 
+    # Get prototypes for next algorithm
+    dev = k_means_cuda_init(img, k)
+
+    for i in range(tries) :
+        res, prototypes = k_means_cuda_exec(img, k, stab_error, dev=dev, use_shared_mem = True)
+
+        # Perform sum of squares metric
+        error = np.sum((img - res) ** 2)
+
+        if error < best_error :
+            best_error = error
+            best_prototypes = np.copy(prototypes)
+    
+    k_means_cuda_deinit(dev)
+
+    times = []
+    dev = k_means_cuda_init(img, k)
+
+    for i in range(tries) :
+        dusk = time.time()
+        k_means_cuda_exec(img, k, stab_error, dev=dev, use_shared_mem = True, prototypes = best_prototypes)
+        dawn = time.time()
+        times.append(dawn - dusk)
+
+    k_means_cuda_deinit(dev)
+
+    cuda_cali_time_avg = np.mean(times)
+    cuda_cali_time_std = np.std(times)
+
     return py_time_avg, py_time_std, \
         cpp_time_avg, cpp_time_std, \
         cuda_time_avg, cuda_time_std, \
         cuda_shared_time_avg, cuda_shared_time_std, \
-        cuda_video_time_avg, cuda_video_time_std
+        cuda_video_time_avg, cuda_video_time_std, \
+        cuda_cali_time_avg, cuda_cali_time_std
 
 
 def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : int = 10) :
@@ -269,10 +303,11 @@ def plot_execution_times (img : np.ndarray, k : int, stab_error : int, tries : i
     tries : int
         Number of repetitions on which the average is calculated
     '''
-    py_time_avg, _, cpp_time_avg, _, cuda_time_avg, _, cuda_shared_time_avg, _, cuda_video_time_avg, _ = execution_time_avg (img, k, stab_error, tries)
+    py_time_avg, _, cpp_time_avg, _, cuda_time_avg, _, cuda_shared_time_avg, _, \
+        cuda_video_time_avg, _, cuda_cali_time_avg, _ = execution_time_avg (img, k, stab_error, tries)
 
-    labels = ['Scikit-learn', 'C++', 'CUDA single image', 'CUDA shared memory', 'CUDA video']
-    times = [py_time_avg, cpp_time_avg, cuda_time_avg, cuda_shared_time_avg, cuda_video_time_avg]
+    labels = ['Scikit-learn', 'C++', 'CUDA single image', 'CUDA shared memory', 'CUDA video', 'CUDA w/ calibration']
+    times = [py_time_avg, cpp_time_avg, cuda_time_avg, cuda_shared_time_avg, cuda_video_time_avg, cuda_cali_time_avg]
     times_strings = ["{:.4f}".format(t) for t in times]
 
     plt.figure()

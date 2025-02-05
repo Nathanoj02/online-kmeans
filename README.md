@@ -4,7 +4,7 @@ Project for Signals, Image &amp; Video, Master's Degree in Artificial Intelligen
 ## Setup
 Clone repository
 ```
-git clone git@github.com:Nathanoj02/signals.git
+git clone git@github.com:Nathanoj02/online-kmeans.git
 ```
 
 Update submodule
@@ -14,13 +14,22 @@ git submodule update --init --recursive
 
 Cpp setup
 ```
-mkdir build && cd build
+cd cpp && mkdir build && cd build
 ```
 ```
 cmake ..
 ```
 ```
 make -j
+```
+
+## Execution
+Python execution
+```
+cd lib
+```
+```
+python3 main.py
 ```
 
 ## Arguments
@@ -53,4 +62,10 @@ Max tolerance / error value (float)
 Algorithm (only for image) (python, cpp, cuda, cudashared)
 ```
 -a algorithm
+```
+
+## Utils
+Recompile C++ / CUDA from lib folder
+```
+cd ../cpp/build && cmake .. && make -j8 && cd ../../lib
 ```

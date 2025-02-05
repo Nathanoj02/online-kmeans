@@ -5,7 +5,7 @@ from sklearn.metrics import silhouette_score
 import time
 import os
 
-from algorithms import k_means, k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit, \
+from algorithms import k_means_cpp, k_means_cuda, k_means_cuda_shared_mem, k_means_scikit, \
     k_means_cuda_init, k_means_cuda_deinit, k_means_cuda_exec
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "cpp", "build", "python"))

@@ -94,7 +94,7 @@ add_library(${LIBRARY_NAME} SHARED
 )
 target_link_libraries(${LIBRARY_NAME} ${DEPENDENCIES})
 
-set(BUILD_EXAMPLE true CACHE BOOL "Build examples code")
-if(BUILD_EXAMPLE)
-    add_subdirectory(example)
-endif()
+# set(BUILD_EXAMPLE true CACHE BOOL "Build examples code")
+# if(BUILD_EXAMPLE)
+#     add_subdirectory(example)
+# endif()

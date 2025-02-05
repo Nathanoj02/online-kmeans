@@ -340,44 +340,5 @@ def k_means_video_calibration (cap : cv.VideoCapture, k : int, stab_error : floa
 
     # Save video
     video_res.release()
-        
 
-def k_means_live (k : int, stab_error : float, max_iterations : int = 300) :
-    '''
-    K-means algorithm in real-time using camera from PC
-
-    Parameters
-    ----------
-    k : int
-        Number of clusters
-    stab_error : float
-        Stabilization error
-    max_iterations : int
-        Maximum number of iterations
-    '''
-    cap = cv.VideoCapture(0)
-    assert cap.isOpened(), 'Camera not opened correctly'
-
-    cv.namedWindow('Original', cv.WINDOW_NORMAL)
-    cv.namedWindow('Clustered', cv.WINDOW_NORMAL)
-
-    frame_num = 1
-
-    while cap.isOpened() :
-        # Capture each frame
-        ret, frame = cap.read()
-
-        if not ret :
-            break
-    
-        if frame_num == 1 :
-            dev = k_means_cuda_init(frame, k)
-        
-        res, _ = k_means_cuda_exec(frame, k, stab_error, dev, max_iterations, use_shared_mem = True)
-        cv.imshow('Original', frame)
-        cv.imshow('Clustered', res)
-
-        frame_num += 1
-
-    k_means_cuda_deinit(dev)
         
